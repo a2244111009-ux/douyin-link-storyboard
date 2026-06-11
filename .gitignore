@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.DS_Store
+Thumbs.db
+*.log
+artifacts/
+downloaded/
+transcripts/
+storyboard/
+*.db
+*.sqlite
+cookies.json
