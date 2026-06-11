@@ -29,13 +29,16 @@ Work only with the user's own browser login state or cookies. Do not attempt to 
    - If `downloader-root\config\cookies.json` exists and has required Douyin cookies, continue.
    - Otherwise run `scripts/start_douyin_chrome.ps1`, ask the user to scan-login, then run `scripts/export_douyin_cookies.py`.
 3. Run `scripts/douyin_storyboard_pipeline.py`.
-   - Use a small limit first, usually `--limit 3`.
+   - For competitor-account replication, use `--limit 5` by default.
+   - Use a small limit such as `--limit 3` only for quick smoke tests.
    - Use `--model small` for normal Chinese product口播.
 4. For visual sanity-checks, sample at most 10 checkpoints per video, inspect them internally, then delete them.
 5. Produce final deliverables:
-   - Complete copy only
-   - Copy structure
-   - Storyboard table
+   - Account profile and video data
+   - Complete copy for 5 videos
+   - Copywriting analysis for each video
+   - Detailed remake-grade storyboard for each video
+   - Account-level remake playbook
    - JSONL files for backend ingestion
 
 ## Main Command
@@ -81,6 +84,29 @@ Never print cookie values. Only report cookie count and whether required keys ex
 ## Output Rules
 
 When the user says “先提取完整文案”, only output complete spoken copy. Do not summarize, infer problems, or拆结构.
+
+When the user's goal is to learn from or replicate a competitor account, do not output only a rough storyboard. Produce a complete competitor-account research package:
+
+```text
+account-profile.md
+full-copy-5-videos.md
+copywriting-analysis-5-videos.md
+detailed-storyboard-5-videos.md
+remake-playbook.md
+```
+
+The storyboard must be detailed enough for shooting a similar video, with:
+
+```text
+time_range
+voiceover
+subtitles_screen_text
+base_visual
+code_blocks
+motion_effects
+remake_tip
+shot_purpose
+```
 
 When the user asks “拆分组合/怎么写文案”, output:
 
