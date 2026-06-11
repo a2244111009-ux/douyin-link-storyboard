@@ -4,9 +4,9 @@ import json
 import math
 import os
 import re
-import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 
 
@@ -19,18 +19,29 @@ def parse_args():
     parser.add_argument("--out", required=True, help="Run output directory, preferably on E: drive")
     parser.add_argument("--limit", type=int, default=3, help="Max profile posts to process")
     parser.add_argument("--model", default="small", choices=["tiny", "base", "small", "medium", "large"])
-    parser.add_argument("--frame-step", type=float, default=2.0, help="Seconds between sampled frames")
+    parser.add_argument("--frame-step", type=float, default=6.0, help="Seconds between sampled frames when visual mode is enabled")
+    parser.add_argument("--visual-samples", type=int, default=10, help="Max visual checkpoints per video")
     parser.add_argument("--comments", type=int, default=20, help="Max comments per video")
     parser.add_argument("--include-replies", action="store_true", help="Try to fetch comment replies")
     parser.add_argument("--skip-download", action="store_true", help="Reuse existing downloaded videos")
     parser.add_argument("--skip-transcribe", action="store_true", help="Reuse existing transcripts")
     parser.add_argument("--cache-home", default=r"E:\AIModels", help="Whisper cache root")
     parser.add_argument("--no-simplified", action="store_true", help="Do not pass --sc to transcribe script")
+    parser.add_argument(
+        "--visual-mode",
+        choices=["none", "temp", "keep"],
+        default="none",
+        help="none=fast transcript timeline only, temp=sample frames then delete, keep=keep frames/contact sheets",
+    )
     return parser.parse_args()
 
 
 def run(cmd, cwd=None, env=None):
-    print("+ " + " ".join(str(part) for part in cmd), flush=True)
+    if os.environ.get("DOUYIN_PIPELINE_VERBOSE"):
+        try:
+            print("+ " + " ".join(str(part) for part in cmd), flush=True)
+        except OSError:
+            pass
     subprocess.run(cmd, cwd=cwd, env=env, check=True)
 
 
@@ -188,18 +199,62 @@ def sample_times(duration: float, step: float):
     return times
 
 
-def extract_storyboard(video: Path, aweme_id: str, storyboard_root: Path, transcript_dir: Path, frame_step: float):
-    item_dir = storyboard_root / aweme_id
+def sample_checkpoints(duration: float, max_samples: int):
+    count = max(1, int(max_samples))
+    if duration <= 0:
+        return [0.0]
+    if count == 1:
+        return [round(min(duration - 0.35, duration / 2), 3)]
+    last = max(0.0, duration - 0.35)
+    return [round((last * idx) / (count - 1), 3) for idx in range(count)]
+
+
+def extract_storyboard(video: Path, aweme_id: str, storyboard_root: Path, transcript_dir: Path, frame_step: float, visual_mode: str, visual_samples: int):
+    duration = ffprobe_duration(video)
+    srt = find_transcript(transcript_dir, aweme_id, "srt")
+    segments = parse_srt(srt) if srt else []
+    if visual_mode == "none":
+        draft_rows = []
+        source_rows = segments or [
+            {"start": start, "end": min(start + frame_step, duration), "text": ""}
+            for start in sample_times(duration, frame_step)
+        ]
+        for idx, segment in enumerate(source_rows):
+            start = round(segment["start"], 2)
+            end = round(min(segment["end"], duration), 2)
+            draft_rows.append(
+                {
+                    "aweme_id": aweme_id,
+                    "shot_index": idx + 1,
+                    "time_range": f"{start:.2f}-{end:.2f}s",
+                    "frame_path": "",
+                    "voiceover": segment.get("text", "").strip(),
+                    "visual": "",
+                    "shot_purpose": "",
+                }
+            )
+        return {
+            "aweme_id": aweme_id,
+            "video_path": str(video),
+            "duration": round(duration, 2),
+            "frames": [],
+            "contact_sheet": "",
+            "visual_cache": "not_created",
+            "timeline_rows": draft_rows,
+        }
+
+    temp_context = None
+    keep_visual_cache = visual_mode == "keep"
+    if keep_visual_cache:
+        item_dir = storyboard_root / aweme_id
+    else:
+        temp_context = tempfile.TemporaryDirectory(prefix=f"douyin_{aweme_id}_")
+        item_dir = Path(temp_context.name)
     frames_dir = item_dir / "frames"
     item_dir.mkdir(parents=True, exist_ok=True)
     frames_dir.mkdir(parents=True, exist_ok=True)
 
-    safe_video = item_dir / f"{aweme_id}.mp4"
-    if not safe_video.exists():
-        shutil.copy2(video, safe_video)
-
-    duration = ffprobe_duration(safe_video)
-    times = sample_times(duration, frame_step)
+    times = sample_checkpoints(duration, visual_samples)
     frames = []
     for idx, ts in enumerate(times):
         frame = frames_dir / f"{idx:02d}_{ts:05.2f}s.jpg"
@@ -212,18 +267,19 @@ def extract_storyboard(video: Path, aweme_id: str, storyboard_root: Path, transc
             "-ss",
             f"{ts:.3f}",
             "-i",
-            str(safe_video),
+            str(video),
             "-frames:v",
             "1",
             "-vf",
             "scale=480:-1",
             str(frame),
         ])
-        frames.append({"index": idx, "time": round(ts, 2), "file": str(frame)})
+        frames.append({"index": idx, "time": round(ts, 2), "file": str(frame) if keep_visual_cache else ""})
 
     contact_sheet = item_dir / f"{aweme_id}_contact.jpg"
     list_file = item_dir / "frames.txt"
-    list_file.write_text("\n".join(f"file '{Path(row['file']).as_posix()}'" for row in frames), encoding="utf-8")
+    frame_files = sorted(frames_dir.glob("*.jpg"))
+    list_file.write_text("\n".join(f"file '{path.as_posix()}'" for path in frame_files), encoding="utf-8")
     rows = max(1, math.ceil(len(frames) / 4))
     run([
         "ffmpeg",
@@ -244,8 +300,6 @@ def extract_storyboard(video: Path, aweme_id: str, storyboard_root: Path, transc
         str(contact_sheet),
     ])
 
-    srt = find_transcript(transcript_dir, aweme_id, "srt")
-    segments = parse_srt(srt) if srt else []
     draft_rows = []
     for idx, frame in enumerate(frames):
         start = frame["time"]
@@ -262,14 +316,18 @@ def extract_storyboard(video: Path, aweme_id: str, storyboard_root: Path, transc
             }
         )
 
-    return {
+    result = {
         "aweme_id": aweme_id,
         "video_path": str(video),
         "duration": round(duration, 2),
-        "frames": frames,
-        "contact_sheet": str(contact_sheet),
+        "frames": frames if keep_visual_cache else [{"index": row["index"], "time": row["time"], "file": ""} for row in frames],
+        "contact_sheet": str(contact_sheet) if keep_visual_cache else "",
+        "visual_cache": "kept" if keep_visual_cache else "temporary_deleted",
         "timeline_rows": draft_rows,
     }
+    if temp_context:
+        temp_context.cleanup()
+    return result
 
 
 def main():
@@ -339,7 +397,7 @@ def main():
                     "needs_review": True,
                 }
             )
-        summary = extract_storyboard(video, aweme_id, storyboard_dir, transcript_dir, args.frame_step)
+        summary = extract_storyboard(video, aweme_id, storyboard_dir, transcript_dir, args.frame_step, args.visual_mode, args.visual_samples)
         summaries.append({key: value for key, value in summary.items() if key != "timeline_rows"})
         timeline_rows.extend(summary["timeline_rows"])
 

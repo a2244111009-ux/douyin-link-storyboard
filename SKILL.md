@@ -1,6 +1,6 @@
 ---
 name: douyin-link-storyboard
-description: Extract complete spoken copy, copy-writing structure, and screenshot/timecode storyboards from a Douyin profile or video link using a free local workflow. Use when the user provides a Douyin short link, profile link, or video link and asks to抓取对标账号, 提取视频文案, 拆文案结构, 还原分镜表, 抽截图时间轴, or prepare JSONL outputs for a backend knowledge base.
+description: Extract complete spoken copy, copy-writing structure, and lightweight timecode storyboards from a Douyin profile or video link using a free local workflow. Use when the user provides a Douyin short link, profile link, or video link and asks to抓取对标账号, 提取视频文案, 拆文案结构, 还原分镜表, or prepare JSONL outputs for a backend knowledge base.
 ---
 
 # Douyin Link Storyboard
@@ -8,7 +8,7 @@ description: Extract complete spoken copy, copy-writing structure, and screensho
 Use this skill to turn a Douyin profile/video link into reusable creative research artifacts:
 
 ```text
-Douyin link -> video files -> full spoken copy -> copy structure -> screenshots/timecodes -> storyboard table
+Douyin link -> video files -> full spoken copy -> copy structure -> timecodes -> storyboard table
 ```
 
 Work only with the user's own browser login state or cookies. Do not attempt to bypass platform protections, CAPTCHA, account gates, or rate limits. If anonymous requests fail, ask the user to scan-login once and reuse the local cookie file.
@@ -31,7 +31,7 @@ Work only with the user's own browser login state or cookies. Do not attempt to 
 3. Run `scripts/douyin_storyboard_pipeline.py`.
    - Use a small limit first, usually `--limit 3`.
    - Use `--model small` for normal Chinese product口播.
-4. Inspect contact sheets with `view_image`.
+4. For visual sanity-checks, sample at most 10 checkpoints per video, inspect them internally, then delete them.
 5. Produce final deliverables:
    - Complete copy only
    - Copy structure
@@ -56,7 +56,6 @@ The script creates:
 ```text
 downloaded/                  # mp4, data.json, comments.json
 transcripts/                 # .txt and .srt
-storyboard/                  # frames, contact sheets
 artifacts/transcripts.jsonl  # raw ASR transcript rows
 artifacts/timeline-draft.jsonl
 artifacts/frame-summary.json
@@ -99,13 +98,12 @@ When the user asks for “截图/时间轴/分镜表”, output:
 
 ```text
 time_range
-frame_path
 visual
 voiceover
 shot_purpose
 ```
 
-Use screenshots as evidence. Do not invent visual details that are not visible.
+Default to text-only outputs. If screenshots/frames are needed for checking, sample at most 10 per video, inspect them internally, then delete them. Do not present image grids or embed screenshots unless the user explicitly asks to see them. Final user-facing storyboard output should be a clean text table. Do not invent visual details that are not visible.
 
 ## Copy Cleaning
 
@@ -130,15 +128,14 @@ If uncertain, mark `needs_review: true` in JSONL or mention that the line needs 
 Default to rough storyboard:
 
 ```text
-sample one frame every 2 seconds
 read SRT timecodes
-align overlapping speech with the nearest frame interval
-create a contact sheet for each video
-inspect the contact sheet and representative frames
+split by speech/timecode segments
+optionally sample 10 visual checkpoints per video
+delete visual checkpoints after inspection
 write final storyboard rows
 ```
 
-For higher precision, rerun with a smaller `--frame-step` or add scene-detection before finalizing.
+For higher precision, rerun with a smaller speech/scene interval or add scene-detection before finalizing.
 
 ## References
 
