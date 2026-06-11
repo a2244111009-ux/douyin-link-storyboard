@@ -101,6 +101,7 @@ time_range
 visual
 code_blocks
 motion_effects
+subtitles_screen_text
 voiceover
 shot_purpose
 ```
@@ -111,6 +112,7 @@ For Codex/Remotion-style videos, do not stop at “真人口播”. Extract the 
 
 ```text
 text blocks / data blocks / UI screenshot blocks / card blocks / highlight labels
+subtitles / bilingual subtitles / title text / data text / UI text / CTA text
 entrance animation / slide / scale / fade / mask / glow / emphasis / subtitle sync
 ```
 

@@ -68,7 +68,7 @@ Final reviewed storyboard rows:
 For user-facing Markdown, omit `frame_path` by default and show only:
 
 ```text
-time_range | visual | code_blocks | motion_effects | voiceover | shot_purpose
+time_range | visual | code_blocks | motion_effects | subtitles_screen_text | voiceover | shot_purpose
 ```
 
-For Codex/Remotion-style creator videos, `code_blocks` should capture reusable programmed elements such as text blocks, number cards, UI screenshots, phone mockups, charts, score badges, labels, masks, and highlight words. `motion_effects` should capture how those elements move or emphasize meaning, such as fade in/out, slide, scale, mask reveal, subtitle sync, glow, shake, progress, cursor/typing simulation, or word-level highlight.
+For Codex/Remotion-style creator videos, `code_blocks` should capture reusable programmed elements such as number cards, UI screenshots, phone mockups, charts, score badges, labels, masks, and highlight words. `subtitles_screen_text` should separately capture subtitles and visible text, including Chinese subtitles, bilingual subtitles, title text, data text, UI text, and CTA text. `motion_effects` should capture how those elements move or emphasize meaning, such as fade in/out, slide, scale, mask reveal, subtitle sync, glow, shake, progress, cursor/typing simulation, or word-level highlight.
