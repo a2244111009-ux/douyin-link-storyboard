@@ -2,6 +2,29 @@
 
 Use JSONL for backend ingestion. Keep raw extraction and cleaned/editorial fields separate.
 
+## Competitor Account Package
+
+Default deliverables for a competitor-account replication request:
+
+```text
+account-profile.md
+full-copy-5-videos.md
+copywriting-analysis-5-videos.md
+detailed-storyboard-5-videos.md
+remake-playbook.md
+```
+
+Each package should record the fixed processing scale:
+
+```json
+{
+  "video_count": 5,
+  "transcription_model": "small",
+  "visual_checkpoints_per_video": 15,
+  "visual_files_retained": false
+}
+```
+
 ## transcripts.jsonl
 
 ```json
@@ -59,8 +82,12 @@ Final reviewed storyboard rows:
   "shot_index": 1,
   "time_range": "0.00-1.60s",
   "frame_path": "",
-  "visual": "女生站在床边，手提绿色夏凉被。",
+  "base_visual": "女生站在床边，手提绿色夏凉被。",
+  "code_blocks": ["产品标签", "卖点卡片"],
+  "motion_effects": ["字幕同步", "卖点卡片弹出"],
+  "subtitles_screen_text": ["这个夏凉被睡觉时候"],
   "voiceover": "这个夏凉被睡觉时候",
+  "remake_tip": "先拍真人/产品底片，再叠加卖点卡片。",
   "shot_purpose": "产品和使用场景同时出现。"
 }
 ```

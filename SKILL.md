@@ -32,7 +32,7 @@ Work only with the user's own browser login state or cookies. Do not attempt to 
    - For competitor-account replication, use `--limit 5` by default.
    - Use a small limit such as `--limit 3` only for quick smoke tests.
    - Use `--model small` for normal Chinese product口播.
-4. For visual sanity-checks, sample at most 10 checkpoints per video, inspect them internally, then delete them.
+4. For visual sanity-checks, sample up to 15 checkpoints per video. Inspect them internally, then delete them.
 5. Produce final deliverables:
    - Account profile and video data
    - Complete copy for 5 videos
@@ -50,8 +50,9 @@ python E:\CodexSkills\douyin-link-storyboard\scripts\douyin_storyboard_pipeline.
   --url "https://v.douyin.com/..." `
   --downloader-root "C:\path\to\work\douyin-downloader" `
   --out "E:\DouyinRuns\sample-run" `
-  --limit 3 `
-  --model small
+  --limit 5 `
+  --model small `
+  --visual-mode none
 ```
 
 The script creates:
