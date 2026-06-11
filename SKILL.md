@@ -99,11 +99,22 @@ When the user asks for “截图/时间轴/分镜表”, output:
 ```text
 time_range
 visual
+code_blocks
+motion_effects
 voiceover
 shot_purpose
 ```
 
-Default to text-only outputs. If screenshots/frames are needed for checking, sample at most 10 per video, inspect them internally, then delete them. Do not present image grids or embed screenshots unless the user explicitly asks to see them. Final user-facing storyboard output should be a clean text table. Do not invent visual details that are not visible.
+Default to text-only outputs. If screenshots/frames are needed for checking, sample at most 10 per video, inspect them internally, then delete them. Do not present image grids or embed screenshots unless the user explicitly asks to see them. Final user-facing storyboard output should be a clean text table.
+
+For Codex/Remotion-style videos, do not stop at “真人口播”. Extract the coded layer separately:
+
+```text
+text blocks / data blocks / UI screenshot blocks / card blocks / highlight labels
+entrance animation / slide / scale / fade / mask / glow / emphasis / subtitle sync
+```
+
+Do not invent visual details that are not visible.
 
 ## Copy Cleaning
 
